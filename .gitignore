@@ -6,4 +6,4 @@ ytdlp-script-windows/urls/*
 !ytdlp-script-windows/urls/.gitkeep
 
 # FFMPEG
-ytdlp-script-windows/ffmpeg/bin
+ytdlp-script-windows/ffmpeg/bin/*
