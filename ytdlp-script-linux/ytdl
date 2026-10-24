@@ -1,0 +1,96 @@
+#!/bin/bash
+
+cache="/mnt/Storage/Downloads/YTDL"
+
+mkdir -p "$cache"
+
+start_program() {
+    clear
+    echo -e "===Script by Johanes Steven==="
+    echo -e "\e[1;32m360p, 480p, 720p, 1080p, 2K, 4K\e[0m"
+    echo -e "\e[1;32m1080p-WebM, 2K-WebM, 4K-WebM\e[0m"
+    echo -e "\e[1;32mMP3, WAV\e[0m"
+    read -p "Save as: " type
+
+    if [[ -z "$type" ]]; then
+        echo -e "\e[1;31mError: Tipe download tidak boleh kosong.\e[0m"
+        sleep 2
+        start_program
+        return
+    fi
+
+    type_lower=$(echo "$type" | tr '[:upper:]' '[:lower:]')
+
+    # Choose the resolution lol
+    case "$type_lower" in
+        mp3) config_params=("-x" "--audio-format" "mp3") ;;
+        wav) config_params=("-x" "--audio-format" "wav") ;;
+        1080p) config_params=("-f" "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best" "--merge-output-format" "mp4" "--postprocessor-args" "-c:v hevc_nvenc -qp 18 -c:a aac -b:a 320k") ;;
+        720p) config_params=("-f" "bestvideo[height<=720]+bestaudio/best[height<=720]/best" "--merge-output-format" "mp4" "--postprocessor-args" "-c:v hevc_nvenc -qp 20 -c:a aac -b:a 320k") ;;
+        480p) config_params=("-f" "bestvideo[height<=480]+bestaudio/best[height<=480]/best" "--merge-output-format" "mp4" "--postprocessor-args" "-c:v hevc_nvenc -qp 20 -c:a aac -b:a 320k") ;;
+        360p) config_params=("-f" "bestvideo[height<=360]+bestaudio/best[height<=360]/best" "--merge-output-format" "mp4" "--postprocessor-args" "-c:v hevc_nvenc -qp 20 -c:a aac -b:a 320k") ;;
+        2k) config_params=("-f" "bestvideo[height<=1440]+bestaudio/best[height<=1440]/best" "--merge-output-format" "mp4" "--postprocessor-args" "-c:v hevc_nvenc -qp 18 -c:a aac -b:a 320k") ;;
+        4k) config_params=("-f" "bestvideo[height<=2160]+bestaudio/best[height<=2160]/best" "--merge-output-format" "mp4" "--postprocessor-args" "-c:v hevc_nvenc -qp 18 -c:a aac -b:a 320k") ;;
+        1080p-webm) config_params=("-f" "bestvideo[height<=1080]+bestaudio/best[ext=webm][height<=1080]" "--merge-output-format" "webm") ;;
+        2k-webm) config_params=("-f" "bestvideo[height<=1440]+bestaudio/best[ext=webm][height<=1440]" "--merge-output-format" "webm") ;;
+        4k-webm) config_params=("-f" "bestvideo[height<=2160]+bestaudio/best[ext=webm][height<=2160]" "--merge-output-format" "webm") ;;
+        *)
+            echo -e "\e[1;31mTipe download tidak valid.\e[0m"
+            sleep 2
+            start_program
+            return
+            ;;
+    esac
+
+    echo -e "\nMasukkan URL video satu per satu. Ketik \e[1m'done'\e[0m untuk memulai download."
+
+    url_list_file=$(mktemp)
+
+    while true; do
+        read -p "Enter URL: " url
+
+        if [[ "$url" == "done" ]]; then
+            break
+        fi
+
+        if [[ -z "$url" ]]; then
+            echo -e "\e[1;33mURL tidak boleh kosong, ketik 'done' untuk mulai download.\e[0m"
+            continue
+        fi
+
+        echo "$url" >> "$url_list_file"
+    done
+
+    start_download "$url_list_file"
+}
+
+start_download() {
+    local url_list_file="$1"
+
+    if [[ ! -s "$url_list_file" ]]; then
+        echo -e "\e[1;31mTidak ada URL yang dimasukkan.\e[0m"
+        rm "$url_list_file"
+        sleep 2
+        start_program
+        return
+    fi
+
+    echo -e "\n\e[1;34mStarting download...\e[0m"
+
+    # Jalankan yt-dlp dengan parameter dari array
+    /home/johan/.local/bin/yt-dlp "${config_params[@]}" --output "$cache/%(title)s.%(ext)s" --cache-dir "$cache/cache" --batch-file "$url_list_file"
+
+    if [[ $? -ne 0 ]]; then
+        echo -e "\n\e[1;31mDownload failed\e[0m"
+    else
+        echo -e "\n\e[1;32mDownload successful!\e[0m"
+    fi
+
+    rm "$url_list_file"
+
+    echo -e "\nPress any key to start a new download..."
+    read -n 1
+    start_program
+}
+
+start_program
